@@ -59,6 +59,11 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
     await feedbackRef.set(feedback);
 
+    // Mark the interview as finalized
+    await db.collection("interviews").doc(interviewId).update({
+      finalized: true,
+    });
+
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
     console.error("Error saving feedback:", error);
@@ -118,9 +123,28 @@ export async function getLatestInterviews(
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
+  // Get interviews where user has completed them (finalized = true means taken)
   const interviews = await db
     .collection("interviews")
     .where("userId", "==", userId)
+    .where("finalized", "==", true)
+    .orderBy("createdAt", "desc")
+    .get();
+
+  return interviews.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Interview[];
+}
+
+export async function getPendingInterviewsByUserId(
+  userId: string
+): Promise<Interview[] | null> {
+  // Get interviews created by user but not yet taken (finalized = false)
+  const interviews = await db
+    .collection("interviews")
+    .where("userId", "==", userId)
+    .where("finalized", "==", false)
     .orderBy("createdAt", "desc")
     .get();
 

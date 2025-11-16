@@ -1,4 +1,4 @@
- import Image from "next/image";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import Agent from "@/components/Agent";
@@ -17,7 +17,7 @@ const InterviewDetails = async ({ params }: RouteParams) => {
   const user = await getCurrentUser();
 
   const interview = await getInterviewById(id);
-  if (!interview) redirect("/");
+  if (!interview) redirect("/dashboard");
 
   const feedback = await getFeedbackByInterviewId({
     interviewId: id,

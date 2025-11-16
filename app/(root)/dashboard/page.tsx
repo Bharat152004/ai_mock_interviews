@@ -3,23 +3,24 @@ import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import InterviewCard from "@/components/InterviewCard";
+import CreateSampleDataButton from "@/components/CreateSampleDataButton";
 
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import {
   getInterviewsByUserId,
-  getLatestInterviews,
+  getPendingInterviewsByUserId,
 } from "@/lib/actions/general.action";
 
-async function Home() {
+async function Dashboard() {
   const user = await getCurrentUser();
 
-  const [userInterviews, latestInterview] = await Promise.all([
+  const [completedInterviews, pendingInterviews] = await Promise.all([
     getInterviewsByUserId(user?.id || ""),
-    getLatestInterviews({ userId: user?.id || "" }),
+    getPendingInterviewsByUserId(user?.id || ""),
   ]);
 
-  const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
-  const hasUpcomingInterviews = (latestInterview?.length ?? 0) > 0;
+  const hasCompletedInterviews = (completedInterviews?.length ?? 0) > 0;
+  const hasPendingInterviews = (pendingInterviews?.length ?? 0) > 0;
 
   return (
     <>
@@ -45,11 +46,16 @@ async function Home() {
       </section>
 
       <section className="flex flex-col gap-6 mt-8">
-        <h2>Your Interviews</h2>
+        <div className="flex justify-between items-center">
+          <h2>Your Interviews</h2>
+          {!hasCompletedInterviews && !hasPendingInterviews && (
+            <CreateSampleDataButton userId={user?.id} />
+          )}
+        </div>
 
         <div className="interviews-section">
-          {hasPastInterviews ? (
-            userInterviews?.map((interview) => (
+          {hasCompletedInterviews ? (
+            completedInterviews?.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user?.id}
@@ -70,8 +76,8 @@ async function Home() {
         <h2>Take Interviews</h2>
 
         <div className="interviews-section">
-          {hasUpcomingInterviews ? (
-            latestInterview?.map((interview) => (
+          {hasPendingInterviews ? (
+            pendingInterviews?.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user?.id}
@@ -83,7 +89,10 @@ async function Home() {
               />
             ))
           ) : (
-            <p>There are no interviews available</p>
+            <p>
+              No interviews available. Create one by clicking &quot;Start an
+              Interview&quot;
+            </p>
           )}
         </div>
       </section>
@@ -91,4 +100,4 @@ async function Home() {
   );
 }
 
-export default Home;
+export default Dashboard;

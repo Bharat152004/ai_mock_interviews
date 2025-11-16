@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Clear Firestore Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        button {
+            background: #e63946;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #d62828;
+        }
+
+        button.create-btn {
+            background: #06ffa5;
+            color: #1a1a1a;
+        }
+
+        button.create-btn:hover {
+            background: #05e090;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        input::placeholder {
+            color: #888;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #2a2a2a;
+        }
+
+        .success {
+            color: #06ffa5;
+        }
+
+        .error {
+            color: #e63946;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🗑️ Admin Panel</h1>
+    <p><strong>Warning:</strong> These actions will modify the database!</p>
+
+    <h3>📝 Create Sample Data</h3>
+    <input type="text" id="userId" placeholder="Enter your User ID (required for sample data)" />
+    <button class="create-btn" onclick="createSampleData()">Create Sample Interview Cards</button>
+
+    <hr style="margin: 30px 0; border-color: #444;">
+
+    <h3>🗑️ Clear Database</h3>
+    <button onclick="clearData()">Clear All Data</button>
+    <button onclick="clearCookies()">Clear Session Cookies</button>
+
+    <div id="result" class="result" style="display:none;"></div>
+
+    <script>
+        async function createSampleData() {
+            const userId = document.getElementById('userId').value.trim();
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+
+            if (!userId) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Please enter your User ID first!';
+                return;
+            }
+
+            result.innerHTML = 'Creating sample data...';
+
+            try {
+                const response = await fetch('/api/admin/create-sample-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId, secret: 'create-sample-data-123' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+            ✅ Success! Created:<br>
+            - ${data.created.completedInterviews} completed interviews<br>
+            - ${data.created.pendingInterviews} pending interviews<br>
+            - ${data.created.feedback} feedback entries<br><br>
+            <strong>Refresh the dashboard to see the cards!</strong>
+          `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function clearData() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML = 'Clearing data...';
+
+            try {
+                const response = await fetch('/api/admin/clear-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret: 'clear-all-data-123' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+            ✅ Success! Deleted:<br>
+            - ${data.deleted.interviews} interviews<br>
+            - ${data.deleted.feedback} feedback entries
+          `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = '❌ Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function clearCookies() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML = 'Clearing session...';
+
+            try {
+                // Call server signout
+                await fetch('/api/auth/signout', { method: 'POST' });
+
+                // Clear client cookies
+                document.cookie.split(";").forEach(function (c) {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+
+                result.className = 'result success';
+                result.innerHTML = '✅ Session cleared! Redirecting...';
+                setTimeout(() => window.location.href = '/', 1500);
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
